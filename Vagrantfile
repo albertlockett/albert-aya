@@ -51,7 +51,7 @@ Vagrant.configure("2") do |config|
   #
   config.vm.provider "virtualbox" do |vb|
     # Display the VirtualBox GUI when booting the machine
-    vb.gui = false
+    vb.gui = true
 
     # Customize the amount of memory on the VM:
     vb.memory = "2048"
@@ -66,22 +66,34 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
 
     apt-get update
+    
+    sudo apt-get install gnupg2 -y
+    sudo curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+    sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+    sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
+    
+    apt-get update -y
+    apt-get install -y code
     apt-get install -y gcc git net-tools
+    sudo apt-get install -y --no-install-recommends ubuntu-desktop
+
+    # https://stackoverflow.com/questions/18878117/using-vagrant-to-run-virtual-machines-with-desktop-environment
+    # apt-get install -y xfce4 virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11
 
     # install rust and 
     # https://www.rust-lang.org/tools/install
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
-    source $HOME/.cargo/env
-    echo "source $HOME/.cargo/env" >> ~/.bashrc
+    # curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+    # source $HOME/.cargo/env
+    # echo "source $HOME/.cargo/env" >> ~/.bashrc
 
-    # install aya toolchain
-    # https://aya-rs.github.io/book/start/development.html
-    rustup install stable
-    rustup toolchain install nightly --component rust-src
+    # # install aya toolchain
+    # # https://aya-rs.github.io/book/start/development.html
+    # rustup install stable
+    # rustup toolchain install nightly --component rust-src
     
-    cargo install --git https://github.com/aya-rs/bpf-linker  --tag v0.9.2 --no-default-features --features rust-llvm -- bpf-linker
+    # cargo install --git https://github.com/aya-rs/bpf-linker  --tag v0.9.2 --no-default-features --features rust-llvm -- bpf-linker
 
-    git clone https://github.com/albertlockett/albert-aya.git
+    # git clone https://github.com/albertlockett/albert-aya.git
 
   SHELL
 end
