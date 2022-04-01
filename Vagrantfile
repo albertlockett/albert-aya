@@ -66,12 +66,13 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
 
     apt-get update
-    apt-get install -y gcc git
+    apt-get install -y gcc git net-tools
 
     # install rust and 
     # https://www.rust-lang.org/tools/install
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
     source $HOME/.cargo/env
+    echo "source $HOME/.cargo/env" >> ~/.bashrc
 
     # install aya toolchain
     # https://aya-rs.github.io/book/start/development.html
@@ -80,7 +81,7 @@ Vagrant.configure("2") do |config|
     
     cargo install --git https://github.com/aya-rs/bpf-linker  --tag v0.9.2 --no-default-features --features rust-llvm -- bpf-linker
 
-    
+    git clone https://github.com/albertlockett/albert-aya.git
 
   SHELL
 end
