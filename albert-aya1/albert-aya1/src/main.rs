@@ -1,6 +1,7 @@
 use std::net;
 
 use anyhow::Context;
+use aya::maps::HashMap;
 use aya::programs::{Xdp, XdpFlags};
 use aya::util::online_cpus;
 use aya::{include_bytes_aligned, maps::perf::PerfEventArray, Bpf};
@@ -43,6 +44,12 @@ async fn main() -> Result<(), anyhow::Error> {
     program.attach(&opt.iface, XdpFlags::default())
         .context("failed to attach the XDP program with default flags - try changing XdpFlags::default() to XdpFlags::SKB_MODE")?;
     let mut perf_array = PerfEventArray::try_from(bpf.map_mut("EVENTS")?)?;
+
+    let mut hash_map = HashMap::try_from(bpf.map_mut("BLOCKLIST")?)?;
+
+    let block_up = net::Ipv4Addr::new(192, 168, 56, 1);
+    let x = u32::from_be_bytes(block_up.octets());
+    hash_map.insert(x, 0u32, 0).unwrap();
 
     for cpu_id in online_cpus()? {
         let mut buf = perf_array.open(cpu_id, None)?;

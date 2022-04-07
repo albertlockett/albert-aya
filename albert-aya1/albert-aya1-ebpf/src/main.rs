@@ -7,7 +7,7 @@ use albert_aya1_common::PacketLog;
 use aya_bpf::{
     bindings::xdp_action,
     macros::{map, xdp},
-    programs::XdpContext, maps::PerfEventArray,
+    programs::XdpContext, maps::{HashMap, PerfEventArray},
 };
 use memoffset::offset_of;
 
@@ -18,6 +18,8 @@ use bindings::{ethhdr, iphdr};
 #[map(name = "EVENTS")]
 static mut EVENTS: PerfEventArray<PacketLog> = PerfEventArray::<PacketLog>::with_max_entries(1024, 0);
 
+#[map(name = "BLOCKLIST")]
+static mut BLOCKLIST: HashMap<u32, u32> = HashMap::<u32, u32>::with_max_entries(1024, 0);
 
 #[inline(always)]
 unsafe fn ptr_at<T>(ctx: &XdpContext, offset: usize) -> Result<*const T, ()> {
@@ -30,6 +32,10 @@ unsafe fn ptr_at<T>(ctx: &XdpContext, offset: usize) -> Result<*const T, ()> {
     }
 
     Ok((start + offset) as *const T)
+}
+
+fn block_ip(address: u32) -> bool {
+    unsafe { BLOCKLIST.get(&address).is_some() }
 }
 
 #[xdp(name="albert_aya1")]
@@ -48,15 +54,20 @@ fn try_albert_aya1(ctx: XdpContext) -> Result<u32, ()> {
    }
 
    let source = u32::from_be(unsafe { *ptr_at(&ctx, ETH_HDR_LEN + offset_of!(iphdr, saddr))? });
+   let action = if block_ip(source) {
+       xdp_action::XDP_DROP
+   } else {
+       xdp_action::XDP_PASS
+   };
 
     let log_entry = PacketLog {
         ipv4_address: source,
-        action: xdp_action::XDP_PASS,
+        action,
     };
     unsafe {
         EVENTS.output(&ctx, &log_entry, 0);
     }
-    Ok(xdp_action::XDP_PASS)
+    Ok(action)
 }
 
 #[panic_handler]
