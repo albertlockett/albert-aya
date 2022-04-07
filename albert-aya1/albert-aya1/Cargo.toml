@@ -8,7 +8,7 @@ publish = false
 aya = { git = "https://github.com/aya-rs/aya", branch="main" }
 albert-aya1-common = { path = "../albert-aya1-common", features=["user"] }
 anyhow = "1.0.42"
-
+bytes = "1"
 log = "0.4"
 simplelog = "0.11"
 structopt = { version = "0.3" }
